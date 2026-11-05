@@ -3,6 +3,10 @@
  const numeric=(v,min=0,max=Infinity)=>v!=null&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=min&&Number(v)<=max?Number(v):null;
  function badge(value){const label=String(value||'').replace(/\s+/g,' ').trim(),m=label.match(/^([\d,]+(?:\.\d+)?)\s*([KM])?\s*\+\s+bought in (?:the\s+)?past month$/i);if(!m)return null;const min=Number(m[1].replace(/,/g,''))*({K:1000,M:1000000}[m[2]?.toUpperCase()]||1);return Number.isSafeInteger(min)&&min>0?{boughtPastMonthLabel:label,boughtPastMonthMin:min}:null;}
  const hasBadge=p=>{const b=badge(p.boughtPastMonthLabel);return !!b&&b.boughtPastMonthMin===p.boughtPastMonthMin;};
+ const excludedBrands=['Disney','Star Wars','Marvel','Pixar','Dr. Seuss','Cartoon Network','Sanrio','Activision Blizzard','AMC','DragonVale','Trivia Crack','My Singing Monsters','Spider-Man','Harry Potter','Jaws','Batman','Super Mario','Nintendo','Iron Man','Paw Patrol','Kpop Demon Hunters'];
+ const brandWords=v=>String(v||'').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const brandPatterns=[...excludedBrands,'Spiderman','Spider Man','K-pop Demon Hunters','K Pop Demon Hunters','Dragon Vale'].map(brandWords);
+ const excludedBrand=p=>{const texts=[p.title,p.brand].map(v=>' '+brandWords(v)+' ');return brandPatterns.some(term=>texts.some(text=>text.includes(' '+term+' ')));};
  function normalize(p){
   const aliases=Object.fromEntries(Object.entries(p||{}).map(([k,v])=>[k.toLowerCase().replace(/[^a-z]/g,''),v]));const get=(...keys)=>keys.map(k=>aliases[k]).find(v=>v!=null&&v!=='');
   const asin=String(get('asin')||'').toUpperCase(),title=String(get('title','producttitle')||'').trim();if(!/^[A-Z0-9]{10}$/.test(asin)||!title||/^(?:true|yes|1|sponsored)$/i.test(String(get('sponsored','ad')||'')))return null;
@@ -13,14 +17,14 @@
  }
  function filter(products,f={},saved=new Set()){
   let rows=products.filter(p=>{
-   if(!hasBadge(p))return false;
+   if(!hasBadge(p)||excludedBrand(p))return false;
    if(f.savedOnly&&!saved.has(p.asin))return false;
    if(f.query&&!`${p.title} ${p.brand} ${p.asin}`.toLowerCase().includes(f.query.toLowerCase()))return false;
-   for(const [field,min,max] of [['price',f.minPrice,f.maxPrice],['rating',f.minRating,''],['reviewCount',f.minReviews,f.maxReviews],['bsr',f.minBsr,f.maxBsr]]){
+   for(const [field,min,max] of [['price',f.minPrice,f.maxPrice],['rating',f.minRating,''],['reviewCount',f.minReviews,f.maxReviews],['bsr',f.minBsr,f.maxBsr],['boughtPastMonthMin',f.minMonthly,f.maxMonthly]]){
     if(min!==''&&min!=null&&(p[field]==null||p[field]<Number(min)))return false;
     if(max!==''&&max!=null&&(p[field]==null||p[field]>Number(max)))return false;
    }return !f.knownOnly||p.bsr!=null;
-  });const [field,direction]=({bsr:['bsr',1],price:['price',1],priceDesc:['price',-1],reviews:['reviewCount',-1],stars:['rating',-1],newest:['observedAt',-1]})[f.sort]||['bsr',1];
+  });const [field,direction]=({monthly:['boughtPastMonthMin',-1],monthlyAsc:['boughtPastMonthMin',1],bsr:['bsr',1],price:['price',1],priceDesc:['price',-1],reviews:['reviewCount',-1],stars:['rating',-1],newest:['observedAt',-1]})[f.sort]||['bsr',1];
   rows.sort((a,b)=>a[field]==null?b[field]==null?a.asin.localeCompare(b.asin):1:b[field]==null?-1:(a[field]-b[field])*direction||a.asin.localeCompare(b.asin));return rows;
  }
  const median=values=>{const a=values.filter(v=>v!=null&&Number.isFinite(v)).sort((a,b)=>a-b);return a.length?a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2:null;};
@@ -32,7 +36,7 @@
  const baseStop=new Set('a an and are as at be by for from how i im in is it its me my of on or our that the their this to with you your shirt shirts tshirt tshirts t shirt t-shirts tee tees gift gifts men mens women womens kids boys girls unisex youth adult adults funny cool novelty cotton premium lightweight classic fit solid colors heather all other double needle sleeve bottom hem machine wash cold like dry low heat'.split(' '));
  function keywords(products,{maxBsr=100000,extra='',size='all'}={}){
   const stop=new Set([...baseStop,...extra.toLowerCase().split(/[,\n]/).map(s=>s.trim()).filter(Boolean)]),map=new Map();
-  const eligible=products.filter(p=>hasBadge(p)&&p.bsr!=null&&p.bsr<=maxBsr&&/^clothing(?:[,\s].*)?$|^fashion$/i.test(p.bsrCategory||''));
+  const eligible=products.filter(p=>hasBadge(p)&&!excludedBrand(p)&&p.bsr!=null&&p.bsr<=maxBsr&&/^clothing(?:[,\s].*)?$|^fashion$/i.test(p.bsrCategory||''));
   for(const p of eligible){const tokens=p.title.toLowerCase().match(/[\p{L}\p{N}]+(?:['’][\p{L}]+)?/gu)||[],phrases=new Set();
    for(const n of size==='all'?[1,2,3]:[Number(size)])for(let i=0;i<=tokens.length-n;i++){const words=tokens.slice(i,i+n);if(words.some(w=>stop.has(w)||w.length<2)||stop.has(words.join(' ')))continue;phrases.add(words.join(' '));}
    for(const term of phrases){if(!map.has(term))map.set(term,[]);map.get(term).push(p);}
@@ -41,5 +45,5 @@
  }
  function parseCSV(text){let rows=[],row=[],cell='',quoted=false;text=String(text).replace(/^\uFEFF/,'');for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}else if(c===','&&!quoted){row.push(cell);cell='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(Boolean))rows.push(row);row=[];cell='';}else cell+=c;}if(quoted)throw Error('Unclosed quote in CSV.');row.push(cell);if(row.some(Boolean))rows.push(row);const header=rows.shift();if(!header)throw Error('The file is empty.');return rows.map(row=>Object.fromEntries(header.map((key,i)=>[key,row[i]??''])));}
  function csv(rows,fields){const cell=v=>{let s=String(v??'');if(/^[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};return '\uFEFF'+[fields.map(cell).join(','),...rows.map(row=>fields.map(key=>cell(row[key])).join(','))].join('\r\n');}
- globalThis.SparkResearchModel={normalize,filter,median,estimate,keywords,parseCSV,csv,badge,hasBadge};
+ globalThis.SparkResearchModel={excludedBrands,excludedBrand,normalize,filter,median,estimate,keywords,parseCSV,csv,badge,hasBadge};
 })();

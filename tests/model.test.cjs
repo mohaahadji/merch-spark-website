@@ -13,3 +13,15 @@ test('legacy products without badge evidence never enter results or keyword rese
  assert.equal(M.hasBadge(p(3,{boughtPastMonthLabel:'50+ bought in past week'})),false);
  const csv=M.csv([good],['asin','title','boughtPastMonthLabel','boughtPastMonthMin']);const imported=M.normalize(M.parseCSV(csv)[0]);assert.equal(imported.boughtPastMonthMin,1000);assert.equal(imported.boughtPastMonthLabel,'1K+ bought in past month');
 });
+
+test('monthly badge thresholds combine with all other filters and support numeric sorting',()=>{
+ const rows=[p(1),p(2,{price:22,boughtPastMonthLabel:'1K+ bought in past month'}),p(3,{price:18,rating:4.8,reviewCount:20,boughtPastMonthLabel:'100+ bought in past month'}),p(4,{boughtPastMonthLabel:null})];
+ assert.deepEqual(Array.from(M.filter(rows,{minMonthly:100,maxMonthly:500,maxPrice:20,minRating:4.5,maxReviews:25,query:'hiking'}),p=>p.asin),['B000000003']);
+ assert.deepEqual(Array.from(M.filter(rows,{sort:'monthly'}),p=>p.boughtPastMonthMin),[1000,100,50]);
+ assert.equal(M.filter(rows,{minMonthly:1000,maxMonthly:1000}).length,1);assert.equal(M.filter(rows,{maxMonthly:25}).length,0);
+});
+test('excluded brands stay excluded from saved/imported products and keyword extraction',()=>{
+ for(const brand of M.excludedBrands){const item=p(1,{brand});assert.equal(M.filter([item]).length,0,brand);assert.equal(M.filter([item],{savedOnly:true},new Set([item.asin])).length,0);assert.equal(M.keywords([item]).length,0);}
+ for(const title of ['Spider-Man Shirt','K-Pop Demon Hunters Tee','Dr. Seuss Shirt'])assert.equal(M.filter([p(1,{title})]).length,0);
+ assert.equal(M.filter([p(1,{title:'Marvelous Camping Shirt'})]).length,1);
+});
