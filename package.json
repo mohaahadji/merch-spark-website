@@ -1,6 +1,6 @@
 {
   "name": "merch-spark-website",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "private": true,
   "description": "Merch Spark Research Studio: browser-local Amazon product and keyword research.",
   "type": "module",
