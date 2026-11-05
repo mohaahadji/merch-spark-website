@@ -18,7 +18,8 @@ for(const page of pages){
   if(!fs.existsSync(local))throw Error(`Broken link: ${value} in ${page}`);
   if(url.hash&&local.endsWith('.html')){
    const target=fs.readFileSync(local,'utf8'),id=decodeURIComponent(url.hash.slice(1));
-   if(!target.includes(`id="${id}"`)&&!target.includes(`id='${id}'`))throw Error(`Missing section ${value}`);
+   const workspaceRoute=['discover','keywords','saved'].includes(id)&&target.includes('research-app.js')&&target.includes(`data-view="${id}"`);
+   if(!workspaceRoute&&!target.includes(`id="${id}"`)&&!target.includes(`id='${id}'`))throw Error(`Missing section ${value}`);
   }
   links++;
  }

@@ -1,6 +1,8 @@
-# Merch Spark Research Studio
+# Merch Spark Website & Research Studio
 
-A browser-local Amazon.com research workspace at https://mohaahadji.github.io/merch-spark-website/.
+Public homepage: https://mohaahadji.github.io/merch-spark-website/.
+
+Research Studio: https://mohaahadji.github.io/merch-spark-website/research/. Product Discovery and Keyword Hunter are directly linked at /research/#discover and /research/#keywords.
 
 ## Features
 
@@ -62,3 +64,5 @@ Version 3.2.3 reads rendered cards in a dedicated inactive Amazon search tab ins
 Current behavior (3.2.5): searches use a paced background GET to the fixed Amazon.com search endpoint and never create or navigate tabs. Amazon verification, timeouts and HTTP errors pause collection; opening/capturing a browser tab is an explicit user action only. The independent Keyword Hunter has its own niche search, one/three/five-page scans, stored source collection, minimum purchase badge, optional BSR, phrase length, frequency and exclusion filters. It requires a purchase badge but no BSR by default. A snapshot of discovery listings can be copied explicitly. Discovery and keyword searches preserve separate collections. Keyword frequency and badge thresholds are research sample evidence, not keyword search volume or exact sales.
 
 Version 3.2.6: Keyword Hunter generates only two-to-five-word phrases; single-word output is unavailable, including for legacy size=1 inputs. Newly loaded product matches append below the existing collection in the selected batch sort order. Explicit filter/sort changes re-sort the current collection. Added Justin Bieber, Pokémon, Third Eye Blind (including Third Eye Blink), Hot Wheels, Jurassic Park/World, Sesame Street, Coca-Cola, Barbie, Metallica (including Mettalica), and Legend of Zelda exclusions. Matching handles accents, punctuation and the listed spelling variants in both brand and title. Saved/imported website records are filtered too.
+
+The homepage introduces the extension and both research tools, with direct calls to action into the studio. Existing research uses the same origin and local-storage keys, preserving stored collections, shortlist and preferences. App view hashes support direct links and browser navigation; earlier root #discover/#keywords/#saved links redirect into /research/. Extension settings now link directly into the studio. Extension access remains private; no public store listing or downloadable release is claimed.
