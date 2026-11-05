@@ -3,7 +3,7 @@
  const numeric=(v,min=0,max=Infinity)=>v!=null&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=min&&Number(v)<=max?Number(v):null;
  function badge(value){const label=String(value||'').replace(/\s+/g,' ').trim(),m=label.match(/^([\d,]+(?:\.\d+)?)\s*([KM])?\s*\+\s+bought in (?:the\s+)?past month$/i);if(!m)return null;const min=Number(m[1].replace(/,/g,''))*({K:1000,M:1000000}[m[2]?.toUpperCase()]||1);return Number.isSafeInteger(min)&&min>0?{boughtPastMonthLabel:label,boughtPastMonthMin:min}:null;}
  const hasBadge=p=>{const b=badge(p.boughtPastMonthLabel);return !!b&&b.boughtPastMonthMin===p.boughtPastMonthMin;};
- const excludedBrands=['Disney','Star Wars','Marvel','Pixar','Dr. Seuss','Cartoon Network','Sanrio','Activision Blizzard','AMC','DragonVale','Trivia Crack','My Singing Monsters','Spider-Man','Harry Potter','Jaws','Batman','Super Mario','Nintendo','Iron Man','Paw Patrol','Kpop Demon Hunters'];
+ const excludedBrands=['Peanuts','Disney','Star Wars','Marvel','Pixar','Dr. Seuss','Cartoon Network','Sanrio','Activision Blizzard','AMC','DragonVale','Trivia Crack','My Singing Monsters','Spider-Man','Harry Potter','Jaws','Batman','Super Mario','Nintendo','Iron Man','Paw Patrol','Kpop Demon Hunters'];
  const brandWords=v=>String(v||'').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
  const brandPatterns=[...excludedBrands,'Spiderman','Spider Man','K-pop Demon Hunters','K Pop Demon Hunters','Dragon Vale'].map(brandWords);
  const excludedBrand=p=>{const texts=[p.title,p.brand].map(v=>' '+brandWords(v)+' ');return brandPatterns.some(term=>texts.some(text=>text.includes(' '+term+' ')));};
