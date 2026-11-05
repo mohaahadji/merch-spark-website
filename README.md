@@ -6,7 +6,7 @@ A browser-local Amazon.com research workspace at https://mohaahadji.github.io/me
 
 - Responsive four-column product discovery grid; prices, stars, ratings count, ASINs and captured BSR.
 - Search using the supplied Amazon-sold novelty-shirt URL, or capture an open Amazon search tab.
-- Sponsored-card exclusion, ASIN deduplication and explicit missing values.
+- Sponsored-card exclusion, ASIN deduplication and explicit missing values. Only listings with an Amazon “bought in past month” badge are collected and displayed. The badge text, numeric lower bound and capture time are retained; these are separate from modeled sales. Pages with no qualifying badges produce an empty result, not cached results from another search.
 - Price, BSR, minimum stars and ratings-count filters, sorting and pagination.
 - Keyword hunter for one-, two- and three-word title phrases in your filtered lower-BSR sample; source products are visible. Frequency is not search volume.
 - Shortlist, four-product comparison, product quick views and locally captured rank history.
@@ -16,7 +16,7 @@ A browser-local Amazon.com research workspace at https://mohaahadji.github.io/me
 
 ## Connect real Amazon data
 
-1. Load Merch Spark extension v3.2.0 or later in Chrome. Its source remains private at https://github.com/mohaahadji/merch-spark-extension.
+1. Load Merch Spark extension v3.2.1 or later in Chrome. Its source remains private at https://github.com/mohaahadji/merch-spark-extension.
 2. In the extension's settings, enable optional Amazon.com research access.
 3. Refresh the public research site, click Connect Spark, and search a niche.
 4. Click Get BSR & details to enrich the visible products. Collection has saved progress and a Stop control. It pauses if Amazon blocks a request or requests verification.
@@ -50,3 +50,7 @@ npm run check
 ```
 
 Edit `site/`, not generated `dist/`. GitHub Actions builds, validates links and assets, runs model tests and deploys only `dist/`. Research data is stored in each browser; no collected products, credentials or runtime account data are committed to this public repository. The extension source remains in its separate private repository. No backend or subscription service is created.
+
+### Purchase-badge-only research
+
+CSV/JSON imports require `boughtPastMonthLabel` in addition to ASIN and title, e.g. `50+ bought in past month`. Labels such as `1K+ bought in past month` are parsed to a lower bound of 1,000 for export; the original label remains visible. Unbadged legacy records and imported rows are excluded from results, shortlist views and keyword sources. The badge is a captured Amazon statement, not an exact unit-sales report.
