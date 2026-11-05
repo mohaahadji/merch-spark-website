@@ -30,3 +30,15 @@ test('independent keyword hunting needs purchase badges but not BSR; optional fi
  const rows=[p(1,{title:'Forest Hiking Adventure Shirt',bsr:null}),p(2,{title:'Forest Hiking Adventure Tee',bsr:null,boughtPastMonthLabel:'200+ bought in past month'}),p(3,{title:'Forest Hiking Adventure Tee',bsr:null,brand:'Peanuts'}),p(4,{title:'Forest Hiking Adventure Shirt',boughtPastMonthLabel:null})];
  const term=M.keywords(rows,{size:'2'}).find(t=>t.term==='forest hiking');assert.equal(term.count,2);assert.equal(term.medianBsr,null);assert.equal(term.medianMonthly,125);assert.equal(Number.isFinite(term.score),true);assert.equal(M.keywords(rows,{maxBsr:100000}).length,0);assert.equal(M.keywords(rows,{minMonthly:200,size:'2'}).find(t=>t.term==='forest hiking').count,1);
 });
+
+test('keyword results contain only two-to-five-word phrases, including when a legacy caller requests singles',()=>{
+ for(const size of ['all','1','2','3','4','5',0,99]){const terms=M.keywords([p(1,{title:'Mountain Forest Hiking Adventure Camping Nature Shirt'})],{size});assert.ok(terms.length);for(const term of terms){const count=term.term.split(' ').length;assert.ok(count>=2&&count<=5,term.term);if(['2','3','4','5'].includes(String(size)))assert.equal(count,Number(size));}}
+});
+test('new result batches append after existing matches even if they rank ahead under the selected sort',()=>{
+ const a=p(1,{price:20}),b=p(2,{price:30}),c=p(3,{price:10});const first=M.filter([a,b],{sort:'price'}),second=M.filter([a,b,c],{sort:'price'});
+ const appended=M.appendOrder(second,first.map(p=>p.asin));assert.deepEqual(Array.from(appended,p=>p.asin),[a.asin,b.asin,c.asin]);assert.deepEqual(Array.from(M.appendOrder(second,[]),p=>p.asin),[c.asin,a.asin,b.asin]);assert.deepEqual(Array.from(M.appendOrder([b,c],[a.asin,b.asin]),p=>p.asin),[b.asin,c.asin]);assert.equal(M.appendOrder([a,a,b],[]).length,2);
+});
+test('requested musicians and brands are excluded with punctuation, accent and typo variants',()=>{
+ for(const name of ['Justin Bieber','Justin Beiber','Pokemon','Pokémon','Third Eye Blind','Third Eye Blink','Hot Wheels','HotWheels','Jurassic Park','Jurassic World','Sesame Street','Coca-Cola','Coca Cola','CocaCola','Barbie','Metallica','Mettalica','Metalica','The Legend of Zelda','Legend of Zelda','Zelda'])assert.equal(M.filter([p(1,{title:name+' Adventure Shirt'})]).length,0,name);
+ assert.equal(M.filter([p(1,{title:'Mountain Adventure Shirt',brand:'Coca-Cola Company'})]).length,0);assert.equal(M.filter([p(1,{title:'Hot Wilderness Adventure Shirt'})]).length,1);
+});
