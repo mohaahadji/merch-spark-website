@@ -42,3 +42,10 @@ test('requested musicians and brands are excluded with punctuation, accent and t
  for(const name of ['Justin Bieber','Justin Beiber','Pokemon','Pokémon','Third Eye Blind','Third Eye Blink','Hot Wheels','HotWheels','Jurassic Park','Jurassic World','Sesame Street','Coca-Cola','Coca Cola','CocaCola','Barbie','Metallica','Mettalica','Metalica','The Legend of Zelda','Legend of Zelda','Zelda'])assert.equal(M.filter([p(1,{title:name+' Adventure Shirt'})]).length,0,name);
  assert.equal(M.filter([p(1,{title:'Mountain Adventure Shirt',brand:'Coca-Cola Company'})]).length,0);assert.equal(M.filter([p(1,{title:'Hot Wilderness Adventure Shirt'})]).length,1);
 });
+
+test('additional franchises and aliases are excluded from discovery, saved results and keyword hunter',()=>{
+ for(const name of ["Nickelodeon","Nick","Naruto","Gorillaz","Simpsons","Dungeons & Dragons","Little Pony","Twilight","Popfunk","SpongeBob","Invincible","Spice Girls","DreamWorks Trolls","Wicked","Slipknot","Cannibal Corpse","Backstreet Boys","Transformers","Blink-182","Coors","Britney Spears","DC Comics","Rick and Morty","Looney Tunes","Nickeloden","Nickelodian","Dungeons and Dragons","Sponge Bob","SpongeBob SquarePants","Songbob","Trolls","Blink182","Rick & Morty"]){
+  for(const field of ['brand','title']){const item=p(1,{[field]:name+' Shirt'});assert.equal(M.filter([item]).length,0,name);assert.equal(M.filter([item],{savedOnly:true},new Set([item.asin])).length,0,name);assert.equal(M.keywords([item]).length,0,name);}
+ }
+ for(const title of ['Knickerbocker Hiking Shirt','Wickedly Funny Gardening','Nickel Mountain Camping'])assert.equal(M.filter([p(1,{title})]).length,1,title);
+});
