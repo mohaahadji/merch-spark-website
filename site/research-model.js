@@ -34,14 +34,14 @@
   return {units:Math.round(units),low:Math.floor(units*.5),high:Math.ceil(units*2),revenue:product.price==null?null:units*product.price,royalties:numeric(model.royalty)!=null?units*Number(model.royalty):null};
  }
  const baseStop=new Set('a an and are as at be by for from how i im in is it its me my of on or our that the their this to with you your shirt shirts tshirt tshirts t shirt t-shirts tee tees gift gifts men mens women womens kids boys girls unisex youth adult adults funny cool novelty cotton premium lightweight classic fit solid colors heather all other double needle sleeve bottom hem machine wash cold like dry low heat'.split(' '));
- function keywords(products,{maxBsr=100000,extra='',size='all'}={}){
+ function keywords(products,{maxBsr='',minMonthly='',extra='',size='all'}={}){
   const stop=new Set([...baseStop,...extra.toLowerCase().split(/[,\n]/).map(s=>s.trim()).filter(Boolean)]),map=new Map();
-  const eligible=products.filter(p=>hasBadge(p)&&!excludedBrand(p)&&p.bsr!=null&&p.bsr<=maxBsr&&/^clothing(?:[,\s].*)?$|^fashion$/i.test(p.bsrCategory||''));
+  const eligible=filter(products,{minMonthly,maxBsr});
   for(const p of eligible){const tokens=p.title.toLowerCase().match(/[\p{L}\p{N}]+(?:['’][\p{L}]+)?/gu)||[],phrases=new Set();
    for(const n of size==='all'?[1,2,3]:[Number(size)])for(let i=0;i<=tokens.length-n;i++){const words=tokens.slice(i,i+n);if(words.some(w=>stop.has(w)||w.length<2)||stop.has(words.join(' ')))continue;phrases.add(words.join(' '));}
    for(const term of phrases){if(!map.has(term))map.set(term,[]);map.get(term).push(p);}
   }
-  return [...map].map(([term,items])=>({term,count:items.length,medianBsr:median(items.map(p=>p.bsr)),medianReviews:median(items.map(p=>p.reviewCount)),averagePrice:items.filter(p=>p.price!=null).length?items.filter(p=>p.price!=null).reduce((sum,p)=>sum+p.price,0)/items.filter(p=>p.price!=null).length:null,score:items.reduce((sum,p)=>sum+1/Math.log10(p.bsr+10),0),asins:items.map(p=>p.asin)})).sort((a,b)=>b.score-a.score||a.medianBsr-b.medianBsr||a.term.localeCompare(b.term));
+  return [...map].map(([term,items])=>({term,count:items.length,medianMonthly:median(items.map(p=>p.boughtPastMonthMin)),medianBsr:median(items.map(p=>p.bsr)),medianReviews:median(items.map(p=>p.reviewCount)),averagePrice:items.filter(p=>p.price!=null).length?items.filter(p=>p.price!=null).reduce((sum,p)=>sum+p.price,0)/items.filter(p=>p.price!=null).length:null,score:items.reduce((sum,p)=>sum+Math.log10(p.boughtPastMonthMin+1),0),asins:items.map(p=>p.asin)})).sort((a,b)=>b.score-a.score||a.medianBsr-b.medianBsr||a.term.localeCompare(b.term));
  }
  function parseCSV(text){let rows=[],row=[],cell='',quoted=false;text=String(text).replace(/^\uFEFF/,'');for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}else if(c===','&&!quoted){row.push(cell);cell='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(Boolean))rows.push(row);row=[];cell='';}else cell+=c;}if(quoted)throw Error('Unclosed quote in CSV.');row.push(cell);if(row.some(Boolean))rows.push(row);const header=rows.shift();if(!header)throw Error('The file is empty.');return rows.map(row=>Object.fromEntries(header.map((key,i)=>[key,row[i]??''])));}
  function csv(rows,fields){const cell=v=>{let s=String(v??'');if(/^[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};return '\uFEFF'+[fields.map(cell).join(','),...rows.map(row=>fields.map(key=>cell(row[key])).join(','))].join('\r\n');}

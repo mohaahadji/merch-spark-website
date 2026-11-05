@@ -25,3 +25,8 @@ test('excluded brands stay excluded from saved/imported products and keyword ext
  for(const title of ['Spider-Man Shirt','K-Pop Demon Hunters Tee','Dr. Seuss Shirt'])assert.equal(M.filter([p(1,{title})]).length,0);
  assert.equal(M.filter([p(1,{title:'Marvelous Camping Shirt'})]).length,1);
 });
+
+test('independent keyword hunting needs purchase badges but not BSR; optional filters apply when entered',()=>{
+ const rows=[p(1,{title:'Forest Hiking Adventure Shirt',bsr:null}),p(2,{title:'Forest Hiking Adventure Tee',bsr:null,boughtPastMonthLabel:'200+ bought in past month'}),p(3,{title:'Forest Hiking Adventure Tee',bsr:null,brand:'Peanuts'}),p(4,{title:'Forest Hiking Adventure Shirt',boughtPastMonthLabel:null})];
+ const term=M.keywords(rows,{size:'2'}).find(t=>t.term==='forest hiking');assert.equal(term.count,2);assert.equal(term.medianBsr,null);assert.equal(term.medianMonthly,125);assert.equal(Number.isFinite(term.score),true);assert.equal(M.keywords(rows,{maxBsr:100000}).length,0);assert.equal(M.keywords(rows,{minMonthly:200,size:'2'}).find(t=>t.term==='forest hiking').count,1);
+});
