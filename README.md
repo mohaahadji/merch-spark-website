@@ -53,6 +53,8 @@ npm run check
 
 Edit `site/`, not generated `dist/`. GitHub Actions builds, validates links and assets, runs model tests and deploys only `dist/`. Research data is stored in each browser; no collected products, credentials or runtime account data are committed to this public repository. The extension source remains in its separate private repository. No backend or subscription service is created.
 
+The Research page's password prompt is a client-side convenience gate only. Unlocking lasts for the browser tab's session; if session storage is unavailable, the page still unlocks but will ask again on reload. Its verifier and app files are publicly downloadable, so it must not be used to protect confidential data. Use hosting-level authentication for real access control.
+
 ### Purchase-badge-only research
 
 CSV/JSON imports require `boughtPastMonthLabel` in addition to ASIN and title, e.g. `50+ bought in past month`. Labels such as `1K+ bought in past month` are parsed to a lower bound of 1,000 for export; the original label remains visible. Unbadged legacy records and imported rows are excluded from results, shortlist views and keyword sources. The badge is a captured Amazon statement, not an exact unit-sales report.

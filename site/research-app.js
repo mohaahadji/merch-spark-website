@@ -1,5 +1,37 @@
 (() => {
  'use strict';
+ const accessKey='sparkResearchUnlockedV2',passwordDigest='07090e14e7927e8dbdc6cb674978a89da48a9ffe7db8a289a69c0124ada91b24';
+ let hasAccess=false;try{hasAccess=sessionStorage.getItem(accessKey)==='true';}catch{}
+ if(!hasAccess){
+  const gate=document.createElement('section');gate.id='research-access';gate.className='research-access';gate.setAttribute('aria-labelledby','research-access-title');
+  gate.innerHTML='<div class="research-access-panel"><a class="research-access-brand" href="/" aria-label="Merch Spark home"><span class="brand-mark">S<span>✦</span></span><span>Merch Spark<small>RESEARCH STUDIO</small></span></a><div class="research-access-copy"><span class="research-access-eyebrow">PRIVATE WORKSPACE</span><h1 id="research-access-title">Welcome back<span>✦</span></h1><p>Enter your access password to continue.</p></div><form id="research-access-form"><label for="research-access-password">Password</label><input id="research-access-password" name="password" type="password" autocomplete="current-password" required autofocus aria-describedby="research-access-error"><button type="submit">Unlock Research <span aria-hidden="true">↗</span></button><p id="research-access-error" role="alert" aria-live="polite"></p></form><small class="research-access-note">Your research stays in this browser.</small></div>';
+  document.body.append(gate);
+  const form=gate.querySelector('#research-access-form'),input=gate.querySelector('#research-access-password'),error=gate.querySelector('#research-access-error'),submit=form.querySelector('button');
+    input.focus();
+  form.addEventListener('submit',async event=>{
+   event.preventDefault();error.textContent='';submit.disabled=true;
+   let digest;
+   try{
+    const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(input.value));
+    digest=[...new Uint8Array(bytes)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
+   }catch{error.textContent='Password verification is unavailable in this browser.';return;}
+   finally{submit.disabled=false;}
+   if(digest!==passwordDigest){error.textContent='That password did not match. Try again.';input.select();return;}
+   let storageUnavailable=false;
+   try{sessionStorage.setItem(accessKey,'true');}catch{storageUnavailable=true;}
+   gate.remove();
+   initializeResearch();
+   if(storageUnavailable)noticeStorageUnavailable();
+  });
+  return;
+ }
+ initializeResearch();
+ function noticeStorageUnavailable(){
+  const notice=document.querySelector('#notice'),text=document.querySelector('#notice-text');
+  notice.hidden=false;notice.classList.add('error');text.textContent='Browser session storage is unavailable. You will need to enter the password again after reloading.';
+ }
+ function initializeResearch(){
+ document.body.dataset.researchUnlocked='true';
  const M=SparkResearchModel,$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
  const DEFAULT_SOURCE='https://www.amazon.com/s?i=fashion-novelty&bbn=12035955011&rh=p_6%3AATVPDKIKX0DER&hidden-keywords=shirt&oq=Solid+colors%3A+100%25%2BCotton%3B+Heather+Grey%3A+90%25%2BCotton%2C+10%25%2BPolyester%3B+All+Other+Heathers%3A+50%25%2BCotton%2C+50%25%2BPolyester+Lightweight%2C+Classic+fit%2C+Double-needle+sleeve+and+bottom+hem+Machine+wash+cold+with+like+colors%2C+dry+low+heat+-long+-premium+-sweatshirt+-v-neck+-tank+10+x+8+x+1+inches%3B+4.8+Ounces';
  const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}},write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{notice('Browser storage is full. Export your research to keep a copy.',true);}};
@@ -135,4 +167,5 @@
  $('#import-open').onclick=()=>dialog('#import-dialog');$('#empty-import').onclick=()=>dialog('#import-dialog');$('#import-file').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>10000000)throw Error('Use a file smaller than 10 MB.');const text=await file.text(),parsed=file.name.toLowerCase().endsWith('.json')?JSON.parse(text):M.parseCSV(text),rows=Array.isArray(parsed)?parsed:parsed.products;if(!Array.isArray(rows)||rows.length>5000)throw Error('Import an array of at most 5,000 products.');const products=rows.map(row=>M.normalize({...row,imported:true})).filter(p=>p&&M.hasBadge(p)&&!M.excludedBrand(p));if(!products.length)throw Error('No qualifying rows. Include ASIN, title, and boughtPastMonthLabel (for example: 50+ bought in past month).');merge(products.map(p=>({...p,imported:true})));state.collection={asins:products.map(p=>p.asin),observedAt:Date.now(),sponsoredExcluded:rows.length-products.length,imported:true};write('sparkResearchCollection',state.collection);state.page=0;$('#import-dialog').close();setView('discover');notice('Imported '+products.length+' products locally · '+(rows.length-products.length)+' invalid, sponsored, excluded-brand or badge-free rows excluded. File values have not been verified against Amazon.');}catch(error){notice(error.message,true);}finally{e.target.value='';}};
  function theme(dark){document.body.classList.toggle('dark',dark);$('#theme-label').textContent=dark?'Light appearance':'Dark appearance';write('sparkResearchDark',dark);}$('#theme').onclick=()=>theme(!document.body.classList.contains('dark'));theme(read('sparkResearchDark',false));
  window.addEventListener('hashchange',()=>{const view=location.hash.slice(1);if(['discover','keywords','saved'].includes(view)&&view!==state.view)setView(view);});connection();setView(['discover','keywords','saved'].includes(location.hash.slice(1))?location.hash.slice(1):'discover');window.dispatchEvent(new Event('spark-research-ping'));if(document.documentElement.dataset.sparkResearch==='ready'){autoConnected=true;void connect(false);}
+ }
 })();
