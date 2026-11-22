@@ -36,3 +36,5 @@ body:not([data-research-unlocked])>:not(#research-access){display:none!important
 .sports-image-workflow p { margin: 0; }
 .sports-image-workflow textarea { width: 100%; font: inherit; }
 .sports-image-workflow button { justify-self: start; }
+#pinterest-summary { white-space: pre-wrap; max-width: 75ch; }
+#pinterest-section .table-wrap { margin-block: 1rem; }
