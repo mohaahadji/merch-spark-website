@@ -1,5 +1,5 @@
 (() => {
- function mount({request,node,date,canCollect,canFindPins,openSettings,useKeyword}) {
+ function mount({request,node,date,canCollect,canFindPins,canShop,openSettings,useKeyword}) {
   const $=id=>document.getElementById(id);
   const status=$('pinterest-status'),results=$('pinterest-results'),summary=$('pinterest-summary'),analyze=$('pinterest-analyze');
   let trends=[];
@@ -57,6 +57,29 @@
     pinStatus.textContent=pinGrid.childElementCount?pinGrid.childElementCount+' Pin images for '+term+'.':'Pinterest returned no displayable images for '+term+'.';
    }catch(error){pinStatus.textContent=error.message+' You can open the same search on Pinterest.';}
    finally{pinButton.disabled=false;}
+  };
+  const shopping=$('pinterest-shopping-category'),shopButton=$('pinterest-shopping-button'),shopStatus=$('pinterest-shopping-status'),shopGrid=$('pinterest-shopping-grid');
+  shopping.onchange=()=>{
+   $('pinterest-shopping-source').href='https://trends.pinterest.com/shopping/'+shopping.value+'/?'+(shopping.value==='1453'?'parentProductCategory=1181&':'')+'country=US';
+   shopGrid.replaceChildren();shopStatus.textContent='';
+  };
+  $('pinterest-shopping-form').onsubmit=async event=>{
+   event.preventDefault();
+   if(shopButton.disabled)return;
+   if(!canShop()){shopStatus.textContent='Reload the updated extension, then refresh this page.';return;}
+   shopButton.disabled=true;shopping.disabled=true;shopGrid.replaceChildren();shopStatus.textContent='Reading Pinterest’s top products panel in the background…';
+   try{
+    const data=await request('SPARK_RESEARCH_PINTEREST_SHOPPING',{category:shopping.value});
+    for(const product of data.products){
+     if(!/^\d{1,30}$/.test(product.id)||!/^https:\/\/i\.pinimg\.com\//i.test(product.image))continue;
+     const card=node('a',null,'pinterest-pin-card');
+     card.href='https://www.pinterest.com/pin/'+product.id+'/';card.target='_blank';card.rel='noopener noreferrer';
+     const image=node('img');image.src=product.image;image.alt=product.title||'Pinterest product '+product.rank;image.loading='lazy';image.referrerPolicy='no-referrer';
+     card.append(image,node('span',product.rank+'. '+(product.title||'Pinterest product')+(product.merchant?' · '+product.merchant:'')));shopGrid.append(card);
+    }
+    shopStatus.textContent=shopGrid.childElementCount+' product images · collected '+date(data.observedAt)+(data.visibleProducts>shopGrid.childElementCount?' · Some cards had no available image.':'');
+   }catch(error){shopStatus.textContent=error.message;}
+   finally{shopButton.disabled=false;shopping.disabled=false;}
   };
   analyze.onclick=async()=>{
    if(!globalThis.LanguageModel){summary.textContent='Chrome’s on-device AI is unavailable. The collected data is ready to review.';return;}
