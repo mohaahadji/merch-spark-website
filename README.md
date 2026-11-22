@@ -70,3 +70,11 @@ Version 3.2.6: Keyword Hunter generates only two-to-five-word phrases; single-wo
 The homepage introduces the extension and both research tools, with direct calls to action into the studio. Existing research uses the same origin and local-storage keys, preserving stored collections, shortlist and preferences. App view hashes support direct links and browser navigation; earlier root #discover/#keywords/#saved links redirect into /research/. Extension settings now link directly into the studio. Extension access remains private; no public store listing or downloadable release is claimed.
 
 Version 3.2.10 adds the research bridge on the exact HTTPS merchspark.io and www.merchspark.io research paths, retaining the GitHub Pages connection. Other subdomains, lookalike hosts, unrelated paths and private extension actions remain blocked. After updating the unpacked extension, reload it in chrome://extensions and refresh the research page. Extension settings now link to https://merchspark.io/research/.
+
+## Sports opportunities
+
+Open Research Studio and choose **Sports opportunities**. The scan samples one Amazon results page for each of three campus or fan niches in the selected sport. It ranks niches by the median visible past-month purchase badge threshold and shows the sample size and a source listing. The thresholds describe the sampled listings and cannot establish exact unit sales or total niche demand.
+
+Reload the updated Merch Spark extension and enable both **Amazon.com research** and **official USPTO search** in its settings. Use desktop Chrome with the [Prompt API](https://developer.chrome.com/docs/ai/prompt-api) for design generation. Choose a niche and select **Generate and screen a design**. Spark checks the proposed slogan and selected wording variants against live U.S. apparel records. Possible matches and incomplete checks withhold the artwork. Generating again after a possible match sends the screening findings back to the designer.
+
+Drafts use generic sport geometry, original wording, and a palette and layout chosen for thumbnail readability and fan identity. The transparent PNG is 4500 × 5400. Automatic wording screening and original asset provenance provide preliminary checks. Visual similarity, common-law rights, licensing, and rights of publicity still require review before listing.

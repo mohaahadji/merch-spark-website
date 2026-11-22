@@ -22,3 +22,12 @@ body:not([data-research-unlocked])>:not(#research-access){display:none!important
 .research-access-copy{margin:38px 0 26px}.research-access-eyebrow{color:var(--blue);font-size:10px;font-weight:700;letter-spacing:1.5px}.research-access-copy h1{margin:9px 0;font:800 30px Manrope,sans-serif;color:var(--text)}.research-access-copy h1 span{margin-left:7px;color:var(--orange);font-size:22px}.research-access-copy p{margin:0;color:var(--muted);font-size:13px}
 #research-access-form{display:grid;gap:10px}#research-access-form label{font-size:12px;font-weight:700;color:var(--text)}#research-access-password{width:100%;min-height:46px;padding:11px 13px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--text);font-size:16px}#research-access-form button{min-height:46px;margin-top:3px;padding:10px 14px;border:0;border-radius:9px;background:var(--blue);color:#fff;font-weight:700}#research-access-form button span{margin-left:6px}#research-access-form button:focus-visible{outline:3px solid var(--orange);outline-offset:3px}#research-access-error{min-height:18px;margin:0;color:#c24135;font-size:12px}
 .research-access-note{display:block;margin-top:17px;color:var(--muted);font-size:11px}
+
+#sports-section p { max-width: 72ch; }
+#sports-results { display: grid; gap: .75rem; padding-inline-start: 1.6rem; }
+#sports-results li { padding: .85rem; border: 1px solid var(--line); border-radius: .75rem; }
+#sports-results li p { margin: .25rem 0; }
+#sports-section a { text-decoration: underline; }
+#sports-design-output { margin-block: 1rem; }
+.sports-art { max-width: 26rem; overflow: hidden; border-radius: .8rem; }
+.sports-art svg { display: block; width: 100%; height: auto; }
