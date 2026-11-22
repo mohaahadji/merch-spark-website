@@ -22,7 +22,10 @@
      button.onclick=()=>useKeyword(trend.keyword);
      action.append(button);row.append(action);results.append(row);
     }
-    status.textContent=trends.length?trends.length+' US trends · collected '+date(response.observedAt):'Pinterest returned no trends for these filters.';
+    status.textContent=response.locallyFiltered
+     ? 'Pinterest’s keyword request failed. Spark found '+trends.length+' matches in '+response.sourceCount+' unfiltered US trends.'
+       +(trends.length?' Ranks are from that broader list.':' Clear the keywords to see all returned trends.')
+     : trends.length?trends.length+' US trends · collected '+date(response.observedAt):'Pinterest returned no trends for these filters.';
    }catch(error){status.textContent=error.message;}
    finally{button.disabled=false;analyze.disabled=!trends.length;}
   };
