@@ -48,20 +48,33 @@
   if (!draft || typeof draft.slogan!=='string' || !/^([A-Za-z]+ ){1,6}[A-Za-z]+$/.test(draft.slogan) || draft.slogan.length>55
    || !Object.hasOwn(palettes,draft.palette) || !['stack','split'].includes(draft.layout)
    || typeof draft.emotion!=='string' || !draft.emotion.trim() || draft.emotion.length>280) throw Error('The AI returned an invalid design. Try generating it again.');
+  draft.direction=typeof draft.direction==='string'?draft.direction.trim().slice(0,350):'';
   return draft;
  }
- const guardrails='Use generic campus sports rituals and fan belonging. Avoid team, university, conference, athlete and brand names, nicknames, initials, existing chants, slogans, mascot references, official colorways, logos, uniforms, copied artwork and any suggestion of official affiliation. Only original wording, with a generic sport symbol drawn by the app.';
+ function imageBrief(sport,niche,draft) {
+  const {ink,accent,shirt,intent}=palettes[draft.palette];
+  return [
+   'Create one original, text-free illustration for the central chest print of a collegiate '+sport.toLowerCase()+' fan T-shirt.',
+   'Audience: college students and fans interested in '+niche.query+'. Emotional goal: '+draft.emotion,
+   draft.direction ? 'Designer art direction: '+draft.direction : 'Depict one recognizable '+sport.toLowerCase()+' object and a game-day gesture from that niche. Use an editorial sports illustration style, bold contours, and a single strong silhouette.',
+   'Use '+ink+' and '+accent+' as the ink colors for contrast on a '+shirt+' shirt. '+intent,
+   'Make the artwork readable at thumbnail size. Center it in a landscape format, leave a small transparent margin, and use flat spot colors with clean edges. Export a transparent PNG.',
+   'Deliver the isolated illustration only. Omit lettering, numbers, mockups, garments, rectangular backdrops, gradients, and fine texture. Spark will add the screened slogan as separate typography.',
+   'Use fictional generic equipment and scenes. Exclude real teams, schools, players, mascots, likenesses, logos, existing artwork, and recognizable uniforms or trade dress.',
+  ].join('\n\n');
+ }
+ const guardrails='Use generic campus sports rituals and fan belonging. Avoid team, university, conference, athlete and brand names, nicknames, initials, existing chants, slogans, mascot references, official colorways, logos, uniforms, copied artwork and any suggestion of official affiliation. Use original wording and unbranded imagery.';
  async function aiDesign(sport, niche, rejected, prior) {
   // Start the session from the button click so Chrome can authorize a model download.
   if(!globalThis.LanguageModel)throw Error('Chrome’s on-device AI is unavailable in this browser. Try the latest desktop Chrome with Prompt API support.');
-  const session=await LanguageModel.create({initialPrompts:[{role:'system',content:'You are an original T-shirt designer for college students and sports fans. Follow the supplied IP restrictions. Return only a JSON object with slogan (2 to 7 plain English words, maximum 55 letters and spaces), palette (night-game, weekend, or clubhouse), layout (stack or split), emotion (one short sentence describing the intended connection to the audience).'}]});
+  const session=await LanguageModel.create({initialPrompts:[{role:'system',content:'You are a senior fashion graphics designer specializing in screen-printed sports T-shirts for college students and fans. Build the concept around a specific fan ritual, group belonging or game-day memory. Choose a clear visual hierarchy and contrast for small storefront thumbnails. Treat audience appeal as a design hypothesis. Follow the supplied IP restrictions. Return only a JSON object with slogan (2 to 7 plain English words, maximum 55 letters and spaces), palette (night-game, weekend, or clubhouse), layout (stack or split), emotion (one short sentence describing the intended connection to the audience), and direction (one short sentence describing a distinctive subject, pose and illustration style without text or brands).'}]});
   try {
    return validate(await session.prompt(JSON.stringify({sport,niche:niche.query,demand:{sampleSize:niche.products.length,medianBadgeThreshold:niche.median},guardrails,wordingToAvoid:rejected,screeningFeedback:prior,layoutNotes:'Stack puts the words above the symbol. Split puts words on both sides vertically. Choose for quick thumbnail readability.'})));
   } finally { session.destroy(); }
  }
- function png(sport,draft) {
+ function png(sport,draft,illustration) {
   return new Promise((resolve,reject)=>{
-   const source=URL.createObjectURL(new Blob([artwork(sport,draft)],{type:'image/svg+xml'})),img=new Image();
+   const source=URL.createObjectURL(new Blob([artwork(sport,draft,false,illustration)],{type:'image/svg+xml'})),img=new Image();
    img.onload=()=>{
     URL.revokeObjectURL(source);
     const canvas=document.createElement('canvas');canvas.width=4500;canvas.height=5400;
@@ -81,13 +94,16 @@
   soccer:'<circle r="88"/><path d="M0-36 34-13 21 29H-21L-34-13ZM0-36V-88M34-13l50-15M21 29l31 42M-21 29l-31 42M-34-13l-50-15"/>',
   volleyball:'<circle r="88"/><path d="M0 0Q0-48 58-66M0 0Q47 32 18 86M0 0Q-50 29-84 23M-29 11Q-35-48 25-84M26 9q45 20 29 60M-2-30q-53 28-74 5"/>',
  };
- function artwork(sport,draft,background=false) {
+ function artwork(sport,draft,background=false,illustration=null) {
   const {ink,accent,shirt}=palettes[draft.palette];
   const words=draft.slogan.toUpperCase().split(' ');
   const pivot=Math.ceil(words.length/2), lines=[words.slice(0,pivot).join(' '),words.slice(pivot).join(' ')];
   const ys=draft.layout==='split'?[120,540]:[120,210];
   const type=lines.map((line,i)=>`<text x="350" y="${ys[i]}" font-size="${Math.min(82,Math.floor(600/Math.max(line.length*.76,1)))}">${line}</text>`).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 620" width="4500" height="3986" role="img" aria-label="Sports shirt concept">${background?`<rect width="700" height="620" fill="${shirt}"/>`:''}<g fill="${ink}" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900">${type}</g><g transform="translate(350 ${draft.layout==='split'?320:420}) scale(1.42)" fill="none" stroke="${accent}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">${symbols[sport]}</g></svg>`;
+  const graphic=illustration
+   ? `<image x="85" y="${draft.layout==='split'?155:245}" width="530" height="${draft.layout==='split'?275:310}" href="${illustration}"/>`
+   : `<g transform="translate(350 ${draft.layout==='split'?320:420}) scale(1.42)" fill="none" stroke="${accent}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">${symbols[sport]}</g>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 620" width="4500" height="3986" role="img" aria-label="Sports shirt concept">${background?`<rect width="700" height="620" fill="${shirt}"/>`:''}<g fill="${ink}" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900">${type}</g>${graphic}</svg>`;
  }
  function mount({request,sourceUrl,beginSearch,endSearch,canDesign,node,date}) {
   const $=id=>document.getElementById(id), status=$('sports-status'), list=$('sports-results'), output=$('sports-design-output');
@@ -162,15 +178,55 @@
     }
     status.textContent='Draft ready for review. No live matches in the limited US apparel wording search.';
     const art=node('div',null,'sports-art');
+    let illustration=null;
+    const brief=node('textarea');
+    brief.value=imageBrief(sports[sport][0],selected,draft);
+    brief.readOnly=true;brief.rows=8;brief.setAttribute('aria-label','Image generator brief');
+    const copy=node('button','Copy image brief','btn');
+    copy.onclick=async()=>{
+     try{await navigator.clipboard.writeText(brief.value);status.textContent='Image brief copied.';}
+     catch{brief.focus();brief.select();status.textContent='The brief is selected. Use your browser’s copy command.';}
+    };
+    const imageBox=node('section',null,'sports-image-workflow');
+    const fileLabel=node('label','Import the generated PNG');
+    const file=node('input');file.type='file';file.accept='image/png';fileLabel.append(file);
+    const reviewLabel=node('label');
+    const review=node('input');review.type='checkbox';reviewLabel.append(review,document.createTextNode(' I reviewed the illustration for text, logos, likenesses, and copied art.'));
+    reviewLabel.hidden=true;
+    const clear=node('button','Remove illustration','btn');clear.hidden=true;
+    imageBox.append(node('h3','Generate an illustration with AI'),node('p','Copy the brief into your image generator. Save the artwork as a transparent PNG, then import it here. Spark adds the screened slogan.'),brief,copy,fileLabel,reviewLabel,clear);
+    const imageStatus=node('p');imageStatus.setAttribute('role','status');imageBox.append(imageStatus);
+    file.onchange=async()=>{
+     const selectedFile=file.files?.[0];
+     if(!selectedFile)return;
+     if(selectedFile.type!=='image/png'||selectedFile.size>10*1024*1024){imageStatus.textContent='Choose a PNG no larger than 10 MB.';file.value='';return;}
+     file.disabled=true;download.disabled=true;
+     try{
+      const data=await new Promise((resolve,reject)=>{
+       const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(selectedFile);
+      });
+      if(!/^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(data))throw Error('Invalid image data.');
+      const preview=new Image();preview.src=data;await preview.decode();
+      illustration=data;review.checked=false;reviewLabel.hidden=false;clear.hidden=false;
+      art.innerHTML=artwork(sport,draft,true,illustration);
+      imageStatus.textContent='Illustration added. Review the artwork before downloading.';
+     }catch{imageStatus.textContent='Could not read that PNG. Try another file.';}
+     finally{file.value='';file.disabled=false;download.disabled=!!illustration&&!review.checked;}
+    };
+    review.onchange=()=>{download.disabled=!!illustration&&!review.checked;};
+    clear.onclick=()=>{
+     illustration=null;review.checked=false;reviewLabel.hidden=true;clear.hidden=true;download.disabled=false;
+     art.innerHTML=artwork(sport,draft,true);imageStatus.textContent='Illustration removed.';
+    };
     // This markup uses only validated ASCII wording and app-owned drawing primitives.
     art.innerHTML=artwork(sport,draft,true);
-    output.append(art,node('p',draft.emotion),node('p',palettes[draft.palette].intent),node('p',draft.layout==='split'?'The symbol sits between two lines of type, keeping the print balanced.':'Stacked lettering reads first, with the sport symbol as the second focal point.'));
-    output.append(node('p','Artwork provenance: original app-drawn sport geometry with system typography. Review similar marks, visual references, rights of publicity and licensing before listing.'));
+    output.append(imageBox,art,node('p',draft.emotion),node('p',palettes[draft.palette].intent),node('p',draft.layout==='split'?'The symbol sits between two lines of type, keeping the print balanced.':'Stacked lettering reads first, with the sport symbol as the second focal point.'));
+    output.append(node('p','Review similar marks, artwork sources, rights of publicity and licensing before listing. The wording check covers the slogan.'));
     const download=node('button','Download transparent PNG','btn');
     download.onclick=async()=>{
      download.disabled=true;
      try{
-      const url=URL.createObjectURL(await png(sport,draft)),a=node('a');
+      const url=URL.createObjectURL(await png(sport,draft,illustration)),a=node('a');
       a.href=url;a.download='merch-spark-sports-concept.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
      }catch(error){status.textContent=error.message;}
      finally{download.disabled=false;}

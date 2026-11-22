@@ -1,14 +1,14 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 
 test('sports workflow ranks live badge evidence, withholds flagged art and passes feedback into a new draft',async()=>{
- const node=(tag,text)=>({tag,text,children:[],get options(){return this.children;},get value(){return this._value??this.children[0]?.value??'';},set value(v){this._value=v;},append(...items){this.children.push(...items);},replaceChildren(){this.children=[];}});
+ const node=(tag,text)=>({tag,text,children:[],get options(){return this.children;},get value(){return this._value??this.children[0]?.value??'';},set value(v){this._value=v;},setAttribute(){},append(...items){this.children.push(...items);},replaceChildren(){this.children=[];}});
  const elements=new Map(),get=id=>{if(!elements.has(id))elements.set(id,node(id));return elements.get(id);};
  get('sports-type').value='basketball';
  get('sports-mode').value='ai';
  const prompts=[],queries=[];
  const slogans=['Around The Rim','Bleachers Bring Us Back',null];
  const LanguageModel={async create(){return {async prompt(input){prompts.push(JSON.parse(input));const slogan=slogans.shift();return JSON.stringify({slogan,palette:'night-game',layout:'split',emotion:'Recall a night with friends.'});},destroy(){}};}};
- const context=vm.createContext({document:{getElementById:get},LanguageModel,URL});
+ const context=vm.createContext({document:{getElementById:get,createTextNode:text=>text},LanguageModel,URL,Image:class{async decode(){}},FileReader:class{readAsDataURL(){this.result='data:image/png;base64,AAAA';this.onload();}}});
  for(const file of ['research-model.js','sports-agents.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../site',file),'utf8'),context);
  let searchActive=false;
  context.SparkSportsAgents.mount({node,date:()=> 'Today',sourceUrl:()=>new URL('https://www.amazon.com/s'),
@@ -42,4 +42,17 @@ test('sports workflow ranks live badge evidence, withholds flagged art and passe
  await get('sports-design').onclick();
  assert.equal(prompts.length,3);
  assert.match(output.children.find(child=>child.tag==='div').innerHTML,/OUR ROW/);
+ const brief=output.children.find(child=>child.tag==='section').children.find(child=>child.tag==='textarea');
+ assert.match(brief.value,/basketball student section/);
+ assert.match(brief.value,/transparent PNG/);
+ assert.match(brief.value,/Spark will add the screened slogan/);
+ const workflow=output.children.find(child=>child.tag==='section');
+ const [file,review]=workflow.children.filter(child=>child.tag==='label').map(label=>label.children[0]);
+ file.files=[{type:'image/png',size:4}];
+ await file.onchange();
+ assert.match(output.children.find(child=>child.tag==='div').innerHTML,/data:image\/png;base64,AAAA/);
+ assert.equal(output.children.at(-1).disabled,true);
+ review.checked=true;
+ review.onchange();
+ assert.equal(output.children.at(-1).disabled,false);
 });

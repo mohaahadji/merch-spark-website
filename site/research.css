@@ -31,3 +31,8 @@ body:not([data-research-unlocked])>:not(#research-access){display:none!important
 #sports-design-output { margin-block: 1rem; }
 .sports-art { max-width: 26rem; overflow: hidden; border-radius: .8rem; }
 .sports-art svg { display: block; width: 100%; height: auto; }
+
+.sports-image-workflow { display: grid; gap: .75rem; max-width: 44rem; margin-block: 1rem; padding: 1rem; border: 1px solid var(--line); border-radius: .75rem; background: var(--surface); }
+.sports-image-workflow p { margin: 0; }
+.sports-image-workflow textarea { width: 100%; font: inherit; }
+.sports-image-workflow button { justify-self: start; }
