@@ -11,6 +11,32 @@
   'weekend': { shirt:'#F4EEE3', ink:'#223B39', accent:'#974638', intent:'Deep teal keeps the words readable on cream. Brick red gives the graphic the warmth of a shared weekend ritual.' },
   'clubhouse': { shirt:'#25233A', ink:'#F5E7FF', accent:'#8DD6BE', intent:'Pale lavender makes the wording legible. Mint gives the central graphic a lively accent against the dark shirt.' },
  };
+ const slogans={
+  football:[['Kickoff Starts In The Parking Lot','Save Me A Spot At Kickoff'],['Bleachers Shake When We Stand','I Lost My Voice At Kickoff'],['My Couch Calls The Plays','Fourth Downs With The Crew']],
+  basketball:[['Tipoff Is Our Study Break','Meet Me Courtside After Class'],['Bleachers Remember Every Buzzer','Our Row Stands For Overtime'],['My Couch Has Courtside Energy','Overtime With My Favorite People']],
+  baseball:[['Class Ends At First Pitch','Meet Me Under Ballpark Lights'],['Bleachers Are My Weekend Seats','Save Our Row For Extra Innings'],['Extra Innings On The Couch','The Living Room Keeps Score']],
+  soccer:[['Lecture Ends Before Kickoff','Meet Me By The Touchline'],['The Stands Sing Past Ninety','Our Row Roars At Stoppage Time'],['My Couch Is The Touchline','Ninety Minutes With My People']],
+  volleyball:[['First Serve After Class','Meet Me Where The Gym Echoes'],['Our Row Cheers Every Rally','Bleachers Shake At Match Point'],['I Count Rallies With Friends','One More Set With The Crew']],
+ };
+ const moods=[
+  {palette:'weekend',layout:'stack',emotion:'Recall the ritual of meeting friends before the game.'},
+  {palette:'night-game',layout:'split',emotion:'Bring back the feeling of cheering in the stands together.'},
+  {palette:'clubhouse',layout:'stack',emotion:'Celebrate the friends who make watching the game a tradition.'},
+ ];
+ function wording(value){return value.toLowerCase().replace(/[^a-z ]/g,' ').replace(/ +/g,' ').trim();}
+ function repeats(slogan,rejected){
+  const candidate=' '+wording(slogan)+' ';
+  return rejected.some(mark=>wording(mark)&&candidate.includes(' '+wording(mark)+' '));
+ }
+ function browserDesign(sport,niche,rejected,previous) {
+  const group=sports[sport].indexOf(niche.query)-1;
+  const order=[group,(group+1)%3,(group+2)%3];
+  const candidates=order.flatMap(i=>slogans[sport][i].map(slogan=>({...moods[group],slogan})))
+   .filter(draft=>!repeats(draft.slogan,rejected));
+  const draft=candidates.find(candidate=>candidate.slogan!==previous)||candidates[0];
+  if(!draft)throw Error('No more slogans are available for this opportunity after screening. Choose another opportunity or sport.');
+  return draft;
+ }
  function opportunity(query, rows) {
   const M = SparkResearchModel;
   const products = [...new Map(rows.map(M.normalize).filter(p=>p&&M.hasBadge(p)&&!M.excludedBrand(p)).map(p=>[p.asin,p])).values()]
@@ -25,7 +51,7 @@
   return draft;
  }
  const guardrails='Use generic campus sports rituals and fan belonging. Avoid team, university, conference, athlete and brand names, nicknames, initials, existing chants, slogans, mascot references, official colorways, logos, uniforms, copied artwork and any suggestion of official affiliation. Only original wording, with a generic sport symbol drawn by the app.';
- async function design(sport, niche, rejected, prior) {
+ async function aiDesign(sport, niche, rejected, prior) {
   // Start the session from the button click so Chrome can authorize a model download.
   if(!globalThis.LanguageModel)throw Error('Chrome’s on-device AI is unavailable in this browser. Try the latest desktop Chrome with Prompt API support.');
   const session=await LanguageModel.create({initialPrompts:[{role:'system',content:'You are an original T-shirt designer for college students and sports fans. Follow the supplied IP restrictions. Return only a JSON object with slogan (2 to 7 plain English words, maximum 55 letters and spaces), palette (night-game, weekend, or clubhouse), layout (stack or split), emotion (one short sentence describing the intended connection to the audience).'}]});
@@ -66,14 +92,14 @@
  function mount({request,sourceUrl,beginSearch,endSearch,canDesign,node,date}) {
   const $=id=>document.getElementById(id), status=$('sports-status'), list=$('sports-results'), output=$('sports-design-output');
   const picker=$('sports-opportunity'), scan=$('sports-scan'), generate=$('sports-design');
-  let opportunities=[],sport,rejected=[],prior='';
+  let opportunities=[],sport,rejected=[],prior='',previous='';
   function controls(busy) {
-   scan.disabled=busy;$('sports-type').disabled=busy;picker.disabled=busy||!opportunities.length;generate.disabled=picker.disabled;
+   scan.disabled=busy;$('sports-mode').disabled=busy;$('sports-type').disabled=busy;picker.disabled=busy||!opportunities.length;generate.disabled=picker.disabled;
   }
   function link(text,url) {
    const a=node('a',text);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;
   }
-  function resetDesign(){output.replaceChildren();rejected=[];prior='';}
+  function resetDesign(){output.replaceChildren();rejected=[];prior='';previous='';}
   picker.onchange=()=>{resetDesign();status.textContent='Opportunity selected. Generate a draft and screen its wording.';};
   $('sports-form').onsubmit=async event=>{
    event.preventDefault();
@@ -110,10 +136,21 @@
    if(!canDesign()){status.textContent='Reload the updated Merch Spark extension and refresh this page to enable apparel wording screening.';return;}
    controls(true);output.replaceChildren();
    try{
-    status.textContent='Design agent is drafting original wording and a color palette…';
-    const draft=await design(sports[sport][0],selected,rejected,prior);
-    status.textContent='IP screening agent is checking the proposed wording with the USPTO…';
+    const useAI=$('sports-mode').value==='ai';
+    let draft, fallback=false;
+    if(useAI){
+     status.textContent='Chrome AI is drafting wording and choosing a palette…';
+     try{
+      draft=await aiDesign(sports[sport][0],selected,rejected,prior);
+      if(repeats(draft.slogan,rejected))throw Error('Draft repeats flagged wording.');
+     }catch{draft=undefined;fallback=true;}
+    }
+    if(!draft)draft=browserDesign(sport,selected,rejected,previous);
+    previous=draft.slogan;
+    const fallbackMessage='Chrome AI did not produce a usable draft. Spark prepared a browser-generated design. ';
+    status.textContent=(fallback?fallbackMessage:'')+'Checking the proposed wording with the USPTO…';
     output.append(node('h3',draft.slogan));
+    if(fallback)output.append(node('p',fallbackMessage.trim()));
     const screen= (await request('SPARK_RESEARCH_TRADEMARK',{phrase:draft.slogan})).screen;
     output.append(node('p','Live US apparel records searched for '+screen.terms.join(', ')+'. Checked '+date(Date.parse(screen.retrievedAt))+'.'));
     if(screen.matchCount||screen.partial){

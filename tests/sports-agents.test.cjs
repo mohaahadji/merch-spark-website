@@ -4,9 +4,10 @@ test('sports workflow ranks live badge evidence, withholds flagged art and passe
  const node=(tag,text)=>({tag,text,children:[],get options(){return this.children;},get value(){return this._value??this.children[0]?.value??'';},set value(v){this._value=v;},append(...items){this.children.push(...items);},replaceChildren(){this.children=[];}});
  const elements=new Map(),get=id=>{if(!elements.has(id))elements.set(id,node(id));return elements.get(id);};
  get('sports-type').value='basketball';
+ get('sports-mode').value='ai';
  const prompts=[],queries=[];
- const slogans=['Around The Rim','Bleachers Bring Us Back'];
- const LanguageModel={async create(){return {async prompt(input){prompts.push(JSON.parse(input));return JSON.stringify({slogan:slogans.shift(),palette:'night-game',layout:'split',emotion:'Recall a night with friends.'});},destroy(){}};}};
+ const slogans=['Around The Rim','Bleachers Bring Us Back',null];
+ const LanguageModel={async create(){return {async prompt(input){prompts.push(JSON.parse(input));const slogan=slogans.shift();return JSON.stringify({slogan,palette:'night-game',layout:'split',emotion:'Recall a night with friends.'});},destroy(){}};}};
  const context=vm.createContext({document:{getElementById:get},LanguageModel,URL});
  for(const file of ['research-model.js','sports-agents.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../site',file),'utf8'),context);
  let searchActive=false;
@@ -34,4 +35,11 @@ test('sports workflow ranks live badge evidence, withholds flagged art and passe
  assert.equal(prompts[1].demand.medianBadgeThreshold,200);
  assert.match(output.children.find(child=>child.tag==='div').innerHTML,/BLEACHERS BRING/);
  assert.equal(output.children.at(-1).text,'Download transparent PNG');
+ await get('sports-design').onclick();
+ assert.ok(output.children.some(child=>child.text?.includes('Chrome AI did not produce a usable draft')));
+ assert.match(output.children.find(child=>child.tag==='div').innerHTML,/BLEACHERS REMEMBER/);
+ get('sports-mode').value='browser';
+ await get('sports-design').onclick();
+ assert.equal(prompts.length,3);
+ assert.match(output.children.find(child=>child.tag==='div').innerHTML,/OUR ROW/);
 });
