@@ -77,7 +77,9 @@
      const image=node('img');image.src=product.image;image.alt=product.title||'Pinterest product '+product.rank;image.loading='lazy';image.referrerPolicy='no-referrer';
      card.append(image,node('span',product.rank+'. '+(product.title||'Pinterest product')+(product.merchant?' · '+product.merchant:'')));shopGrid.append(card);
     }
-    shopStatus.textContent=shopGrid.childElementCount+' product images · collected '+date(data.observedAt)+(data.visibleProducts>shopGrid.childElementCount?' · Some cards had no available image.':'');
+    const upgraded=data.products.filter(product=>product.imageSource==='pin').length;
+    const quality=data.imageLookup==='permission'?' · Enable Pinterest Shopping and Pin images in extension settings for larger photos.':data.imageLookup==='checked'?' · '+upgraded+' larger images from original Pins.':' ';
+    shopStatus.textContent=shopGrid.childElementCount+' product images · collected '+date(data.observedAt)+(data.visibleProducts>shopGrid.childElementCount?' · Some cards had no available image.':'')+quality;
    }catch(error){shopStatus.textContent=error.message;}
    finally{shopButton.disabled=false;shopping.disabled=false;}
   };

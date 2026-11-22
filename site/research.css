@@ -38,7 +38,10 @@ body:not([data-research-unlocked])>:not(#research-access){display:none!important
 .sports-image-workflow button { justify-self: start; }
 #pinterest-summary { white-space: pre-wrap; max-width: 75ch; }
 #pinterest-section .table-wrap { margin-block: 1rem; }
-.pinterest-pin-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:1rem; margin-block:1rem; }
+.pinterest-pin-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; margin-block:1rem; }
 .pinterest-pin-card { display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--line); border-radius:.75rem; background:var(--surface); }
 .pinterest-pin-card img { width:100%; aspect-ratio:4/5; object-fit:contain; background:var(--soft); }
 .pinterest-pin-card span { padding:.65rem; font-size:.875rem; }
+
+@media (max-width: 690px) { .pinterest-pin-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width: 350px) { .pinterest-pin-grid { grid-template-columns:minmax(0,1fr); } }
