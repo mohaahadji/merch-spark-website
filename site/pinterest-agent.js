@@ -1,5 +1,5 @@
 (() => {
- function mount({request,node,date,canCollect,openSettings,useKeyword}) {
+ function mount({request,node,date,canCollect,canFindPins,openSettings,useKeyword}) {
   const $=id=>document.getElementById(id);
   const status=$('pinterest-status'),results=$('pinterest-results'),summary=$('pinterest-summary'),analyze=$('pinterest-analyze');
   let trends=[];
@@ -20,7 +20,8 @@
      for(const value of [trend.rank,trend.keyword,growth(trend.week),growth(trend.month),growth(trend.year)])row.append(node('td',String(value)));
      const action=node('td'),button=node('button','Use in Amazon research','btn');
      button.onclick=()=>useKeyword(trend.keyword);
-     action.append(button);row.append(action);results.append(row);
+     const pins=node('button','View Pins','btn');pins.onclick=()=>{pinTerm.value=trend.keyword;updatePinSearch();$('pinterest-pins-form').requestSubmit();pinStatus.scrollIntoView({block:'nearest'});};
+     action.append(button,pins);row.append(action);results.append(row);
     }
     status.textContent=response.locallyFiltered
      ? 'Pinterest’s keyword request failed. Spark found '+trends.length+' matches in '+response.sourceCount+' unfiltered US trends.'
@@ -28,6 +29,34 @@
      : trends.length?trends.length+' US trends · collected '+date(response.observedAt):'Pinterest returned no trends for these filters.';
    }catch(error){status.textContent=error.message;}
    finally{button.disabled=false;analyze.disabled=!trends.length;}
+  };
+  const pinTerm=$('pinterest-pin-term'),category=$('pinterest-pin-category'),pinGrid=$('pinterest-pin-grid');
+  const pinStatus=$('pinterest-pins-status'),pinButton=$('pinterest-pins-button');
+  function updatePinSearch(){
+   const term=pinTerm.value.trim()||category.value;
+   $('pinterest-open-search').href='https://www.pinterest.com/search/pins/?q='+encodeURIComponent(term);
+   return term;
+  }
+  pinTerm.oninput=updatePinSearch;category.onchange=()=>{pinTerm.value='';updatePinSearch();};
+  $('pinterest-pins-form').onsubmit=async event=>{
+   event.preventDefault();
+   if(pinButton.disabled)return;
+   const term=updatePinSearch();
+   pinGrid.replaceChildren();
+   if(!canFindPins()){pinStatus.textContent='Reload the updated Spark extension, then refresh to enable Pin search.';return;}
+   pinButton.disabled=true;pinStatus.textContent='Looking up top Pins for '+term+'…';
+   try{
+    const {pins}=await request('SPARK_RESEARCH_PINTEREST_PINS',{term});
+    for(const pin of pins){
+     if(!/^\d{1,30}$/.test(pin.id)||!/^https:\/\/i\.pinimg\.com\//i.test(pin.image))continue;
+     const card=node('a',null,'pinterest-pin-card');
+     card.href='https://www.pinterest.com/pin/'+pin.id+'/';card.target='_blank';card.rel='noopener noreferrer';
+     const image=node('img');image.src=pin.image;image.alt=pin.alt||pin.title||'Pinterest reference for '+term;image.loading='lazy';image.referrerPolicy='no-referrer';
+     card.append(image,node('span',pin.title||'Pin '+pin.rank));pinGrid.append(card);
+    }
+    pinStatus.textContent=pinGrid.childElementCount?pinGrid.childElementCount+' Pin images for '+term+'.':'Pinterest returned no displayable images for '+term+'.';
+   }catch(error){pinStatus.textContent=error.message+' You can open the same search on Pinterest.';}
+   finally{pinButton.disabled=false;}
   };
   analyze.onclick=async()=>{
    if(!globalThis.LanguageModel){summary.textContent='Chrome’s on-device AI is unavailable. The collected data is ready to review.';return;}
