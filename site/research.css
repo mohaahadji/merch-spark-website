@@ -45,3 +45,8 @@ body:not([data-research-unlocked])>:not(#research-access){display:none!important
 
 @media (max-width: 690px) { .pinterest-pin-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width: 350px) { .pinterest-pin-grid { grid-template-columns:minmax(0,1fr); } }
+
+/* Spark ribbon branding */
+
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.brand-logo{width:40px;height:40px;object-fit:contain;flex:none}
